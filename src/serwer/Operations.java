@@ -30,7 +30,7 @@ public class Operations {
 	public boolean login(String login, String password) {
 		boolean correct = false;
 		try {
-			PreparedStatement ps = c.prepareStatement("SELECT * FROM Moderators WHERE login = ? AND password = ?");
+			PreparedStatement ps = c.prepareStatement("SELECT * FROM Moderators WHERE login = ? AND password = ?;");
 			ps.setString(1, login);
 			ps.setString(2, password);
 			ResultSet rs = ps.executeQuery();
@@ -71,7 +71,7 @@ public class Operations {
 					}
 
 				}
-				query.concat(") GROUP BY Tag_ID");
+				query.concat(") GROUP BY Tag_ID;");
 			}
 			PreparedStatement ps = c.prepareStatement(query);
 			ps.setString(1, Double.toString(latitude - deltaLat));
@@ -103,6 +103,31 @@ public class Operations {
 
 	}
 
+	public boolean addPlace(String name, String latitude, String longitude, String tags, String owner, String description )
+	{
+		boolean correct = false;
+		try {
+			PreparedStatement ps = c.prepareStatement("INSERT INTO Location (Location_ID, Location_Name, Latitude_cord, Longitude_cord, Tags, Owner, Description)"
+					+ " VALUES (?,?,?,?,?,?,?);");
+			ps.setString(1, null);
+			ps.setString(2, name);
+			ps.setString(3, latitude);
+			ps.setString(4, longitude);
+			ps.setString(5, tags);
+			ps.setString(6, owner);
+			ps.setString(7, description);
+			ps.executeUpdate();
+			correct = true;
+			
+			ps.close();
+			c.close();
+
+		} catch (SQLException e) {
+			System.err.println("Cannot execute this login statment");
+			e.printStackTrace();
+		}
+		return correct;
+	}
 	protected List<Long> findTags(String[] tags) {
 		List<Long> tags_ID = new ArrayList<Long>();
 		try {
@@ -110,7 +135,7 @@ public class Operations {
 			for (int i = 0; i < tags.length - 1; i++) {
 				query.concat("Tag LIKE '" + tags[i] + "' OR");
 			}
-			query.concat("Tag LIKE '" + tags[tags.length - 1] + "' GROUP BY Tag_ID");
+			query.concat("Tag LIKE '" + tags[tags.length - 1] + "' GROUP BY Tag_ID;");
 
 			PreparedStatement ps = c.prepareStatement(query);
 			ResultSet rs = ps.executeQuery(query);
