@@ -5,7 +5,9 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 public class Operations {
@@ -56,7 +58,6 @@ public class Operations {
 			tags_ID = findTags(tags);
 		}
 
-		
 		double deltaLat = radius * 0.00001451;
 		double deltaLong = radius * 0.00000878;
 
@@ -77,7 +78,7 @@ public class Operations {
 			ps.setString(1, Double.toString(latitude - deltaLat));
 			ps.setString(2, Double.toString(latitude + deltaLat));
 			ps.setString(3, Double.toString(longitude - deltaLong));
-			ps.setString(3, Double.toString(longitude + deltaLong));
+			ps.setString(4, Double.toString(longitude + deltaLong));
 			ResultSet rs = ps.executeQuery(query);
 			while (rs.next()) {
 				String s = rs.getString("Location_Name") + "|" + Double.toString(rs.getDouble("Latitude_cord")) + "|"
@@ -97,18 +98,72 @@ public class Operations {
 		return result.toArray(new String[result.size()]);
 	}
 
-	public boolean findEvent(double latitude, double longitude, double radius, String tags) {
+	public String[] findEvent(double latitude, double longitude, double radius, String[] tags) {
 
-		return true;
+		List<Long> tags_ID = new ArrayList<Long>();
+		List<String> result = new ArrayList<String>();
+		if (tags.length > 0) {
+			tags_ID = findTags(tags);
+		}
+
+		double deltaLat = radius * 0.00001451;
+		double deltaLong = radius * 0.00000878;
+
+		try {
+			String query = "SELECT Event_ID, Event_Name, Latitude_cord, Longitude_cord, Date, Time, Tags " + "FROM Events "
+					+ "WHERE Time >= ? AND Date == ? AND (Latitude_cord BETWEEN ? AND ?) AND (Longitude_cord BETWEEN ? AND ?)";
+			if (tags_ID.size() > 0) {
+				query.concat(" AND (Tags LIKE '%" + Long.toString(tags_ID.get(0)) + "%'");
+				if (tags_ID.size() > 1) {
+					for (int i = 1; i < tags_ID.size(); i++) {
+						query.concat(" OR Tags LIKE '%" + Long.toString(tags_ID.get(i)) + "%'");
+					}
+
+				}
+				query.concat(") GROUP BY Tag_ID;");
+			}
+			
+			Calendar cal = Calendar.getInstance();
+	        SimpleDateFormat time = new SimpleDateFormat("HH:mm:ss");
+	        SimpleDateFormat date = new SimpleDateFormat("yyy/mm/dd");
+	        
+			PreparedStatement ps = c.prepareStatement(query);
+			
+			ps.setString(1, time.format(cal.getTime()));
+			ps.setString(2, date.format(cal.getTime()));
+			ps.setString(3, Double.toString(latitude - deltaLat));
+			ps.setString(4, Double.toString(latitude + deltaLat));
+			ps.setString(5, Double.toString(longitude - deltaLong));
+			ps.setString(6, Double.toString(longitude + deltaLong));
+			
+			//dodaæ zwracanie daty i godziny
+			ResultSet rs = ps.executeQuery(query);
+			while (rs.next()) {
+				String s = rs.getString("Event_Name") + "|" + Double.toString(rs.getDouble("Latitude_cord")) + "|"
+						+ Double.toString(rs.getDouble("Latitude_cord")) + "|" + rs.getString("Description");
+				result.add(s);
+
+			}
+			rs.close();
+			ps.close();
+			c.close();
+
+		} catch (SQLException e) {
+			System.err.println("Cannot execute this login statment");
+			e.printStackTrace();
+		}
+
+		return result.toArray(new String[result.size()]);
 
 	}
 
-	public boolean addPlace(String name, String latitude, String longitude, String tags, String owner, String description )
-	{
+	public boolean addPlace(String name, String latitude, String longitude, String tags, String owner,
+			String description) {
 		boolean correct = false;
 		try {
-			PreparedStatement ps = c.prepareStatement("INSERT INTO Location (Location_ID, Location_Name, Latitude_cord, Longitude_cord, Tags, Owner, Description)"
-					+ " VALUES (?,?,?,?,?,?,?);");
+			PreparedStatement ps = c.prepareStatement(
+					"INSERT INTO Location (Location_ID, Location_Name, Latitude_cord, Longitude_cord, Tags, Owner, Description)"
+							+ " VALUES (?,?,?,?,?,?,?);");
 			ps.setString(1, null);
 			ps.setString(2, name);
 			ps.setString(3, latitude);
@@ -118,7 +173,7 @@ public class Operations {
 			ps.setString(7, description);
 			ps.executeUpdate();
 			correct = true;
-			
+
 			ps.close();
 			c.close();
 
@@ -128,6 +183,36 @@ public class Operations {
 		}
 		return correct;
 	}
+
+	public boolean addEvent(String name, String latitude, String longitude,String date, String time, String tags, String owner,
+			String description) {
+		boolean correct = false;
+		try {
+			PreparedStatement ps = c.prepareStatement(
+					"INSERT INTO Events (Event_ID, Latitude_cord, Longitude_cord, Date, Time, Event_Name, Tags, Owner, Description)"
+							+ " VALUES (?,?,?,?,?,?,?,?,?);");
+			ps.setString(1, null);
+			ps.setString(2, latitude);
+			ps.setString(3, longitude);
+			ps.setString(4, date);
+			ps.setString(5, time);
+			ps.setString(6, name);
+			ps.setString(7, tags);
+			ps.setString(8, owner);
+			ps.setString(9, description);
+			ps.executeUpdate();
+			correct = true;
+
+			ps.close();
+			c.close();
+
+		} catch (SQLException e) {
+			System.err.println("Cannot execute this login statment");
+			e.printStackTrace();
+		}
+		return correct;
+	}
+	
 	protected List<Long> findTags(String[] tags) {
 		List<Long> tags_ID = new ArrayList<Long>();
 		try {
