@@ -72,7 +72,7 @@ public class Operations {
 					}
 
 				}
-				query.concat(") GROUP BY Tag_ID;");
+				query.concat(") GROUP BY Location_ID;");
 			}
 			PreparedStatement ps = c.prepareStatement(query);
 			ps.setString(1, Double.toString(latitude - deltaLat));
@@ -81,8 +81,8 @@ public class Operations {
 			ps.setString(4, Double.toString(longitude + deltaLong));
 			ResultSet rs = ps.executeQuery(query);
 			while (rs.next()) {
-				String s = rs.getString("Location_Name") + "|" + Double.toString(rs.getDouble("Latitude_cord")) + "|"
-						+ Double.toString(rs.getDouble("Longitude_cord")) + "|" + rs.getString("Description");
+				String s = rs.getString("Location_Name") + "|" + rs.getString("Latitude_cord") + "|"
+						+ rs.getString("Longitude_cord") + "|" + rs.getString("Description");
 				result.add(s);
 
 			}
@@ -121,12 +121,12 @@ public class Operations {
 					}
 
 				}
-				query.concat(") GROUP BY Tag_ID;");
+				query.concat(") GROUP BY Event_ID;");
 			}
 
 			Calendar cal = Calendar.getInstance();
 			SimpleDateFormat time = new SimpleDateFormat("HH:mm:ss");
-			SimpleDateFormat date = new SimpleDateFormat("yyy/mm/dd");
+			SimpleDateFormat date = new SimpleDateFormat("yyyy/mm/dd");
 
 			PreparedStatement ps = c.prepareStatement(query);
 
@@ -140,8 +140,9 @@ public class Operations {
 			// dodaæ zwracanie daty i godziny
 			ResultSet rs = ps.executeQuery(query);
 			while (rs.next()) {
-				String s = rs.getString("Event_Name") + "|" + Double.toString(rs.getDouble("Latitude_cord")) + "|"
-						+ Double.toString(rs.getDouble("Longitude_cord")) + "|" + rs.getString("Description");
+				String s = rs.getString("Event_Name") + "|" + rs.getString("Latitude_cord") + "|"
+						+ rs.getString("Longitude_cord") + "|" + rs.getString("Date") + "|" + rs.getString("Time") + "|"
+						+ rs.getString("Description");
 				result.add(s);
 
 			}
@@ -216,21 +217,19 @@ public class Operations {
 
 	public String[] fimdOwnEvents(String login) {
 
-		// na razie jest getString do daty i godziny
 		List<String> result = new ArrayList<String>();
 		try {
-			String query = "SELECT Event_ID, Event_Name, Latitude_cord, Longitude_cord, Date, Time, Tags, Owner, Description FROM Events "
-					+ "WHERE Owner = ? GROUP BY Event_ID";
+			String query = "SELECT * FROM Events " + "WHERE Owner = ? GROUP BY Event_ID";
 
 			PreparedStatement ps = c.prepareStatement(query);
 			ps.setString(1, login);
 			ResultSet rs = ps.executeQuery();
 
 			while (rs.next()) {
-				String s = Integer.toString(rs.getInt("Event_ID")) + "|" + rs.getString("Event_Name") + "|"
-						+ Double.toString(rs.getDouble("Latitude_cord")) + "|"
-						+ Double.toString(rs.getDouble("Longitude_cord")) + "|" + rs.getString("Date")
-						+ rs.getString("Time") + "|" + rs.getString("Tags") + "|" + rs.getString("Description");
+				String s = rs.getString("Event_ID") + "|" + rs.getString("Event_Name") + "|"
+						+ rs.getString("Latitude_cord") + "|" + rs.getString("Longitude_cord") + "|"
+						+ rs.getString("Date") + rs.getString("Time") + "|" + rs.getString("Tags") + "|"
+						+ rs.getString("Description");
 				result.add(s);
 
 			}
@@ -247,21 +246,18 @@ public class Operations {
 
 	public String[] fimdOwnLocations(String login) {
 
-		// na razie jest getString do daty i godziny
 		List<String> result = new ArrayList<String>();
 		try {
-			String query = "SELECT Location_ID, Location_Name, Latitude_cord, Longitude_cord, Tags, Owner, Description FROM Events "
-					+ "WHERE Owner = ? GROUP BY Location_ID";
+			String query = "SELECT * FROM Events " + "WHERE Owner = ? GROUP BY Location_ID";
 
 			PreparedStatement ps = c.prepareStatement(query);
 			ps.setString(1, login);
 			ResultSet rs = ps.executeQuery();
 
 			while (rs.next()) {
-				String s = Integer.toString(rs.getInt("Location_ID")) + "|" + rs.getString("Location_Name") + "|"
-						+ Double.toString(rs.getDouble("Latitude_cord")) + "|"
-						+ Double.toString(rs.getDouble("Longitude_cord")) + "|" + rs.getString("Tags") + "|"
-						+ rs.getString("Description");
+				String s = rs.getString("Location_ID") + "|" + rs.getString("Location_Name") + "|"
+						+ rs.getString("Latitude_cord") + "|" + rs.getString("Longitude_cord") + "|"
+						+ rs.getString("Tags") + "|" + rs.getString("Description");
 				result.add(s);
 
 			}
