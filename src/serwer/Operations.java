@@ -82,7 +82,7 @@ public class Operations {
 			ResultSet rs = ps.executeQuery(query);
 			while (rs.next()) {
 				String s = rs.getString("Location_Name") + "|" + Double.toString(rs.getDouble("Latitude_cord")) + "|"
-						+ Double.toString(rs.getDouble("Latitude_cord")) + "|" + rs.getString("Description");
+						+ Double.toString(rs.getDouble("Longitude_cord")) + "|" + rs.getString("Description");
 				result.add(s);
 
 			}
@@ -110,7 +110,8 @@ public class Operations {
 		double deltaLong = radius * 0.00000878;
 
 		try {
-			String query = "SELECT Event_ID, Event_Name, Latitude_cord, Longitude_cord, Date, Time, Tags " + "FROM Events "
+			String query = "SELECT Event_ID, Event_Name, Latitude_cord, Longitude_cord, Date, Time, Tags "
+					+ "FROM Events "
 					+ "WHERE Time >= ? AND Date == ? AND (Latitude_cord BETWEEN ? AND ?) AND (Longitude_cord BETWEEN ? AND ?)";
 			if (tags_ID.size() > 0) {
 				query.concat(" AND (Tags LIKE '%" + Long.toString(tags_ID.get(0)) + "%'");
@@ -122,25 +123,25 @@ public class Operations {
 				}
 				query.concat(") GROUP BY Tag_ID;");
 			}
-			
+
 			Calendar cal = Calendar.getInstance();
-	        SimpleDateFormat time = new SimpleDateFormat("HH:mm:ss");
-	        SimpleDateFormat date = new SimpleDateFormat("yyy/mm/dd");
-	        
+			SimpleDateFormat time = new SimpleDateFormat("HH:mm:ss");
+			SimpleDateFormat date = new SimpleDateFormat("yyy/mm/dd");
+
 			PreparedStatement ps = c.prepareStatement(query);
-			
+
 			ps.setString(1, time.format(cal.getTime()));
 			ps.setString(2, date.format(cal.getTime()));
 			ps.setString(3, Double.toString(latitude - deltaLat));
 			ps.setString(4, Double.toString(latitude + deltaLat));
 			ps.setString(5, Double.toString(longitude - deltaLong));
 			ps.setString(6, Double.toString(longitude + deltaLong));
-			
-			//dodaæ zwracanie daty i godziny
+
+			// dodaæ zwracanie daty i godziny
 			ResultSet rs = ps.executeQuery(query);
 			while (rs.next()) {
 				String s = rs.getString("Event_Name") + "|" + Double.toString(rs.getDouble("Latitude_cord")) + "|"
-						+ Double.toString(rs.getDouble("Latitude_cord")) + "|" + rs.getString("Description");
+						+ Double.toString(rs.getDouble("Longitude_cord")) + "|" + rs.getString("Description");
 				result.add(s);
 
 			}
@@ -172,10 +173,10 @@ public class Operations {
 			ps.setString(6, owner);
 			ps.setString(7, description);
 			ps.executeUpdate();
-			correct = true;
 
 			ps.close();
 			c.close();
+			correct = true;
 
 		} catch (SQLException e) {
 			System.err.println("Cannot execute this login statment");
@@ -184,8 +185,8 @@ public class Operations {
 		return correct;
 	}
 
-	public boolean addEvent(String name, String latitude, String longitude,String date, String time, String tags, String owner,
-			String description) {
+	public boolean addEvent(String name, String latitude, String longitude, String date, String time, String tags,
+			String owner, String description) {
 		boolean correct = false;
 		try {
 			PreparedStatement ps = c.prepareStatement(
@@ -201,8 +202,39 @@ public class Operations {
 			ps.setString(8, owner);
 			ps.setString(9, description);
 			ps.executeUpdate();
-			correct = true;
 
+			ps.close();
+			c.close();
+
+			correct = true;
+		} catch (SQLException e) {
+			System.err.println("Cannot execute this login statment");
+			e.printStackTrace();
+		}
+		return correct;
+	}
+
+	public String[] fimdOwnEvents(String login) {
+
+		// na razie jest getString do daty i godziny
+		List<String> result = new ArrayList<String>();
+		try {
+			String query = "SELECT Event_ID, Event_Name, Latitude_cord, Longitude_cord, Date, Time, Tags, Owner, Description FROM Events "
+					+ "WHERE Owner = ? GROUP BY Event_ID";
+
+			PreparedStatement ps = c.prepareStatement(query);
+			ps.setString(1, login);
+			ResultSet rs = ps.executeQuery();
+
+			while (rs.next()) {
+				String s = Integer.toString(rs.getInt("Event_ID")) + "|" + rs.getString("Event_Name") + "|"
+						+ Double.toString(rs.getDouble("Latitude_cord")) + "|"
+						+ Double.toString(rs.getDouble("Longitude_cord")) + "|" + rs.getString("Date")
+						+ rs.getString("Time") + "|" + rs.getString("Tags") + "|" + rs.getString("Description");
+				result.add(s);
+
+			}
+			rs.close();
 			ps.close();
 			c.close();
 
@@ -210,9 +242,40 @@ public class Operations {
 			System.err.println("Cannot execute this login statment");
 			e.printStackTrace();
 		}
-		return correct;
+		return result.toArray(new String[result.size()]);
 	}
-	
+
+	public String[] fimdOwnLocations(String login) {
+
+		// na razie jest getString do daty i godziny
+		List<String> result = new ArrayList<String>();
+		try {
+			String query = "SELECT Location_ID, Location_Name, Latitude_cord, Longitude_cord, Tags, Owner, Description FROM Events "
+					+ "WHERE Owner = ? GROUP BY Location_ID";
+
+			PreparedStatement ps = c.prepareStatement(query);
+			ps.setString(1, login);
+			ResultSet rs = ps.executeQuery();
+
+			while (rs.next()) {
+				String s = Integer.toString(rs.getInt("Location_ID")) + "|" + rs.getString("Location_Name") + "|"
+						+ Double.toString(rs.getDouble("Latitude_cord")) + "|"
+						+ Double.toString(rs.getDouble("Longitude_cord")) + "|" + rs.getString("Tags") + "|"
+						+ rs.getString("Description");
+				result.add(s);
+
+			}
+			rs.close();
+			ps.close();
+			c.close();
+
+		} catch (SQLException e) {
+			System.err.println("Cannot execute this login statment");
+			e.printStackTrace();
+		}
+		return result.toArray(new String[result.size()]);
+	}
+
 	protected List<Long> findTags(String[] tags) {
 		List<Long> tags_ID = new ArrayList<Long>();
 		try {
