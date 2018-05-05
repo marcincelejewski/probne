@@ -50,10 +50,10 @@ public class Operations {
 		return correct;
 	}
 
-	public String[] findPlace(double latitude, double longitude, double radius, String[] tags) {
+	public FILReplyLocationElement[] findLocation(double latitude, double longitude, double radius, String[] tags) {
 
 		List<Long> tags_ID = new ArrayList<Long>();
-		List<String> result = new ArrayList<String>();
+		List<FILReplyLocationElement> result = new ArrayList<FILReplyLocationElement>();
 		if (tags.length > 0) {
 			tags_ID = findTags(tags);
 		}
@@ -62,8 +62,8 @@ public class Operations {
 		double deltaLong = radius * 0.00000878;
 
 		try {
-			String query = "SELECT Location_ID, Location_Name, Latitude_cord, Longitude_cord, Tags " + "FROM Location "
-					+ "WHERE (Latitude_cord BETWEEN ? AND ?) AND (Longitude_cord BETWEEN ? AND ?)";
+			String query = "SELECT Location_ID, Location_Name, Latitude_cord, Longitude_cord, Tags, Description "
+					+ "FROM Location " + "WHERE (Latitude_cord BETWEEN ? AND ?) AND (Longitude_cord BETWEEN ? AND ?)";
 			if (tags_ID.size() > 0) {
 				query.concat(" AND (Tags LIKE '%" + Long.toString(tags_ID.get(0)) + "%'");
 				if (tags_ID.size() > 1) {
@@ -81,9 +81,8 @@ public class Operations {
 			ps.setString(4, Double.toString(longitude + deltaLong));
 			ResultSet rs = ps.executeQuery(query);
 			while (rs.next()) {
-				String s = rs.getString("Location_Name") + "|" + rs.getString("Latitude_cord") + "|"
-						+ rs.getString("Longitude_cord") + "|" + rs.getString("Description");
-				result.add(s);
+				result.add(new FILReplyLocationElement(rs.getString("Location_Name"), rs.getDouble("Latitude_cord"),
+						rs.getDouble("Longitude_cord"), rs.getString("Description")));
 
 			}
 			rs.close();
@@ -91,17 +90,16 @@ public class Operations {
 			c.close();
 
 		} catch (SQLException e) {
-			System.err.println("Cannot execute this login statment");
+			System.err.println("Cannot execute this find place statment");
 			e.printStackTrace();
 		}
-
-		return result.toArray(new String[result.size()]);
+		return result.toArray(new FILReplyLocationElement[result.size()]);
 	}
 
-	public String[] findEvent(double latitude, double longitude, double radius, String[] tags) {
+	public FILReplyEventElement[] findEvent(double latitude, double longitude, double radius, String[] tags) {
 
 		List<Long> tags_ID = new ArrayList<Long>();
-		List<String> result = new ArrayList<String>();
+		List<FILReplyEventElement> result = new ArrayList<FILReplyEventElement>();
 		if (tags.length > 0) {
 			tags_ID = findTags(tags);
 		}
@@ -110,7 +108,7 @@ public class Operations {
 		double deltaLong = radius * 0.00000878;
 
 		try {
-			String query = "SELECT Event_ID, Event_Name, Latitude_cord, Longitude_cord, Date, Time, Tags "
+			String query = "SELECT Event_ID, Event_Name, Latitude_cord, Longitude_cord, Date, Time, Tags, Description "
 					+ "FROM Events "
 					+ "WHERE Time >= ? AND Date == ? AND (Latitude_cord BETWEEN ? AND ?) AND (Longitude_cord BETWEEN ? AND ?)";
 			if (tags_ID.size() > 0) {
@@ -137,13 +135,11 @@ public class Operations {
 			ps.setString(5, Double.toString(longitude - deltaLong));
 			ps.setString(6, Double.toString(longitude + deltaLong));
 
-			// dodaæ zwracanie daty i godziny
 			ResultSet rs = ps.executeQuery(query);
 			while (rs.next()) {
-				String s = rs.getString("Event_Name") + "|" + rs.getString("Latitude_cord") + "|"
-						+ rs.getString("Longitude_cord") + "|" + rs.getString("Date") + "|" + rs.getString("Time") + "|"
-						+ rs.getString("Description");
-				result.add(s);
+				result.add(new FILReplyEventElement(rs.getString("Event_Name"), rs.getDouble("Latitude_cord"),
+						rs.getDouble("Longitude_cord"), rs.getString("Date"), rs.getString("Time"),
+						rs.getString("Description")));
 
 			}
 			rs.close();
@@ -151,28 +147,27 @@ public class Operations {
 			c.close();
 
 		} catch (SQLException e) {
-			System.err.println("Cannot execute this login statment");
+			System.err.println("Cannot execute this find event statment");
 			e.printStackTrace();
 		}
 
-		return result.toArray(new String[result.size()]);
+		return result.toArray(new FILReplyEventElement[result.size()]);
 
 	}
 
-	public boolean addPlace(String name, String latitude, String longitude, String tags, String owner,
-			String description) {
+	public boolean addLocation(Location location) {
 		boolean correct = false;
 		try {
 			PreparedStatement ps = c.prepareStatement(
 					"INSERT INTO Location (Location_ID, Location_Name, Latitude_cord, Longitude_cord, Tags, Owner, Description)"
 							+ " VALUES (?,?,?,?,?,?,?);");
 			ps.setString(1, null);
-			ps.setString(2, name);
-			ps.setString(3, latitude);
-			ps.setString(4, longitude);
-			ps.setString(5, tags);
-			ps.setString(6, owner);
-			ps.setString(7, description);
+			ps.setString(2, location.getName());
+			ps.setDouble(3, location.getLatitude());
+			ps.setDouble(4, location.getLongitude());
+			ps.setString(5, location.getTags());
+			ps.setString(6, location.getOwner());
+			ps.setString(7, location.getDescription());
 			ps.executeUpdate();
 
 			ps.close();
@@ -180,28 +175,27 @@ public class Operations {
 			correct = true;
 
 		} catch (SQLException e) {
-			System.err.println("Cannot execute this login statment");
+			System.err.println("Cannot add place");
 			e.printStackTrace();
 		}
 		return correct;
 	}
 
-	public boolean addEvent(String name, String latitude, String longitude, String date, String time, String tags,
-			String owner, String description) {
+	public boolean addEvent(Event event) {
 		boolean correct = false;
 		try {
 			PreparedStatement ps = c.prepareStatement(
-					"INSERT INTO Events (Event_ID, Latitude_cord, Longitude_cord, Date, Time, Event_Name, Tags, Owner, Description)"
+					"INSERT INTO Events (Event_ID, Event_Name, Latitude_cord, Longitude_cord, Date, Time, Tags, Owner, Description)"
 							+ " VALUES (?,?,?,?,?,?,?,?,?);");
 			ps.setString(1, null);
-			ps.setString(2, latitude);
-			ps.setString(3, longitude);
-			ps.setString(4, date);
-			ps.setString(5, time);
-			ps.setString(6, name);
-			ps.setString(7, tags);
-			ps.setString(8, owner);
-			ps.setString(9, description);
+			ps.setString(2, event.getName());
+			ps.setDouble(3, event.getLatitude());
+			ps.setDouble(4, event.getLongitude());
+			ps.setString(5, event.getDate());
+			ps.setString(6, event.getTime());
+			ps.setString(7, event.getTags());
+			ps.setString(8, event.getOwner());
+			ps.setString(9, event.getDescription());
 			ps.executeUpdate();
 
 			ps.close();
@@ -209,15 +203,15 @@ public class Operations {
 
 			correct = true;
 		} catch (SQLException e) {
-			System.err.println("Cannot execute this login statment");
+			System.err.println("Cannot add event");
 			e.printStackTrace();
 		}
 		return correct;
 	}
 
-	public String[] fimdOwnEvents(String login) {
+	public Event[] findOwnEvent(String login) {
 
-		List<String> result = new ArrayList<String>();
+		List<Event> result = new ArrayList<Event>();
 		try {
 			String query = "SELECT * FROM Events " + "WHERE Owner = ? GROUP BY Event_ID";
 
@@ -226,11 +220,9 @@ public class Operations {
 			ResultSet rs = ps.executeQuery();
 
 			while (rs.next()) {
-				String s = rs.getString("Event_ID") + "|" + rs.getString("Event_Name") + "|"
-						+ rs.getString("Latitude_cord") + "|" + rs.getString("Longitude_cord") + "|"
-						+ rs.getString("Date") + rs.getString("Time") + "|" + rs.getString("Tags") + "|"
-						+ rs.getString("Description");
-				result.add(s);
+				result.add(new Event(rs.getInt("Event_ID"), rs.getString("Event_Name"), rs.getDouble("Latitude_cord"),
+						rs.getDouble("Longitude_cord"), rs.getString("Date"), rs.getString("Time"),
+						rs.getString("Tags"), login, rs.getString("Description")));
 
 			}
 			rs.close();
@@ -238,38 +230,36 @@ public class Operations {
 			c.close();
 
 		} catch (SQLException e) {
-			System.err.println("Cannot execute this login statment");
+			System.err.println("Cannot find own locations");
 			e.printStackTrace();
 		}
-		return result.toArray(new String[result.size()]);
+		return result.toArray(new Event[result.size()]);
 	}
 
-	public String[] fimdOwnLocations(String login) {
+	public Location[] findOwnLocation(String login) {
 
-		List<String> result = new ArrayList<String>();
+		List<Location> result = new ArrayList<Location>();
 		try {
-			String query = "SELECT * FROM Events " + "WHERE Owner = ? GROUP BY Location_ID";
+			String query = "SELECT * FROM Location " + "WHERE Owner = ? GROUP BY Location_ID";
 
 			PreparedStatement ps = c.prepareStatement(query);
 			ps.setString(1, login);
 			ResultSet rs = ps.executeQuery();
 
 			while (rs.next()) {
-				String s = rs.getString("Location_ID") + "|" + rs.getString("Location_Name") + "|"
-						+ rs.getString("Latitude_cord") + "|" + rs.getString("Longitude_cord") + "|"
-						+ rs.getString("Tags") + "|" + rs.getString("Description");
-				result.add(s);
-
+				result.add(new Location(rs.getInt("Location_ID"), rs.getString("Location_Name"),
+						rs.getDouble("Latitude_cord"), rs.getDouble("Longitude_cord"), rs.getString("Tags"), login,
+						rs.getString("Description")));
 			}
 			rs.close();
 			ps.close();
 			c.close();
 
 		} catch (SQLException e) {
-			System.err.println("Cannot execute this login statment");
+			System.err.println("Cannot find own locations");
 			e.printStackTrace();
 		}
-		return result.toArray(new String[result.size()]);
+		return result.toArray(new Location[result.size()]);
 	}
 
 	protected List<Long> findTags(String[] tags) {
