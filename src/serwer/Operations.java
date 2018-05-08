@@ -50,6 +50,8 @@ public class Operations {
 		return correct;
 	}
 
+
+	
 	public FILReplyLocationElement[] findLocation(double latitude, double longitude, double radius, String[] tags) {
 
 		List<Long> tags_ID = new ArrayList<Long>();
@@ -65,21 +67,26 @@ public class Operations {
 			String query = "SELECT Location_ID, Location_Name, Latitude_cord, Longitude_cord, Tags, Description "
 					+ "FROM Location " + "WHERE (Latitude_cord BETWEEN ? AND ?) AND (Longitude_cord BETWEEN ? AND ?)";
 			if (tags_ID.size() > 0) {
-				query.concat(" AND (Tags LIKE '%" + Long.toString(tags_ID.get(0)) + "%'");
+				query = query.concat(" AND (Tags LIKE '%" + Long.toString(tags_ID.get(0)) + "%'");
 				if (tags_ID.size() > 1) {
 					for (int i = 1; i < tags_ID.size(); i++) {
-						query.concat(" OR Tags LIKE '%" + Long.toString(tags_ID.get(i)) + "%'");
+						query = query.concat(" OR Tags LIKE '%" + Long.toString(tags_ID.get(i)) + "%'");
 					}
 
 				}
-				query.concat(") GROUP BY Location_ID;");
+				query = query.concat(") GROUP BY Location_ID;");
 			}
+			else {
+				query = query.concat(" GROUP BY Location_ID;");
+			}
+			
+			
 			PreparedStatement ps = c.prepareStatement(query);
 			ps.setString(1, Double.toString(latitude - deltaLat));
 			ps.setString(2, Double.toString(latitude + deltaLat));
 			ps.setString(3, Double.toString(longitude - deltaLong));
 			ps.setString(4, Double.toString(longitude + deltaLong));
-			ResultSet rs = ps.executeQuery(query);
+			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				result.add(new FILReplyLocationElement(rs.getString("Location_Name"), rs.getDouble("Latitude_cord"),
 						rs.getDouble("Longitude_cord"), rs.getString("Description")));
@@ -104,6 +111,7 @@ public class Operations {
 			tags_ID = findTags(tags);
 		}
 
+		
 		double deltaLat = radius * 0.00001451;
 		double deltaLong = radius * 0.00000878;
 
@@ -112,15 +120,19 @@ public class Operations {
 					+ "FROM Events "
 					+ "WHERE Time >= ? AND Date == ? AND (Latitude_cord BETWEEN ? AND ?) AND (Longitude_cord BETWEEN ? AND ?)";
 			if (tags_ID.size() > 0) {
-				query.concat(" AND (Tags LIKE '%" + Long.toString(tags_ID.get(0)) + "%'");
+				query = query.concat(" AND (Tags LIKE '%" + Long.toString(tags_ID.get(0)) + "%'");
 				if (tags_ID.size() > 1) {
 					for (int i = 1; i < tags_ID.size(); i++) {
-						query.concat(" OR Tags LIKE '%" + Long.toString(tags_ID.get(i)) + "%'");
+						query = query.concat(" OR Tags LIKE '%" + Long.toString(tags_ID.get(i)) + "%'");
 					}
 
 				}
-				query.concat(") GROUP BY Event_ID;");
+				query = query.concat(") GROUP BY Event_ID;");
 			}
+			else {
+				query = query.concat(" GROUP BY Event_ID;");
+			}
+			
 
 			Calendar cal = Calendar.getInstance();
 			SimpleDateFormat time = new SimpleDateFormat("HH:mm:ss");
@@ -135,7 +147,7 @@ public class Operations {
 			ps.setString(5, Double.toString(longitude - deltaLong));
 			ps.setString(6, Double.toString(longitude + deltaLong));
 
-			ResultSet rs = ps.executeQuery(query);
+			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				result.add(new FILReplyEventElement(rs.getString("Event_Name"), rs.getDouble("Latitude_cord"),
 						rs.getDouble("Longitude_cord"), rs.getString("Date"), rs.getString("Time"),
@@ -213,7 +225,7 @@ public class Operations {
 
 		List<Event> result = new ArrayList<Event>();
 		try {
-			String query = "SELECT * FROM Events " + "WHERE Owner = ? GROUP BY Event_ID";
+			String query = "SELECT * FROM Events WHERE Owner = ? GROUP BY Event_ID";
 
 			PreparedStatement ps = c.prepareStatement(query);
 			ps.setString(1, login);
@@ -240,7 +252,7 @@ public class Operations {
 
 		List<Location> result = new ArrayList<Location>();
 		try {
-			String query = "SELECT * FROM Location " + "WHERE Owner = ? GROUP BY Location_ID";
+			String query = "SELECT * FROM Location WHERE Owner = ? GROUP BY Location_ID";
 
 			PreparedStatement ps = c.prepareStatement(query);
 			ps.setString(1, login);
@@ -263,16 +275,17 @@ public class Operations {
 	}
 
 	protected List<Long> findTags(String[] tags) {
+
 		List<Long> tags_ID = new ArrayList<Long>();
 		try {
 			String query = "SELECT * FROM Tags WHERE ";
 			for (int i = 0; i < tags.length - 1; i++) {
-				query.concat("Tag LIKE '" + tags[i] + "' OR");
+				query = query.concat(" Tag LIKE '" + tags[i] + "' OR");
 			}
-			query.concat("Tag LIKE '" + tags[tags.length - 1] + "' GROUP BY Tag_ID;");
+			query = query.concat(" Tag LIKE '" + tags[tags.length - 1] + "' GROUP BY Tag_ID;");
 
 			PreparedStatement ps = c.prepareStatement(query);
-			ResultSet rs = ps.executeQuery(query);
+			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				tags_ID.add(rs.getLong("Tag_ID"));
 			}
@@ -285,6 +298,10 @@ public class Operations {
 			e.printStackTrace();
 		}
 		return tags_ID;
+
+	}
+
+	Operations() {
 
 	}
 }
